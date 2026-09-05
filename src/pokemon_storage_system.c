@@ -90,6 +90,7 @@ enum {
     MSG_BOX_IS_FULL,
     MSG_RELEASE_POKE,
     MSG_RELEASE_NO_GENOME,
+    MSG_RELEASE_WILL_GIVE_GENOME,
     MSG_RELEASE_WHICH,
     MSG_RELEASE_BOX_ALL,
     MSG_RELEASE_BOX_EGGS,
@@ -1162,7 +1163,8 @@ static const struct StorageMessage sMessages[] =
     [MSG_WAS_DEPOSITED]        = {COMPOUND_STRING("{DYNAMIC 0} was deposited."), MSG_VAR_MON_NAME_1},
     [MSG_BOX_IS_FULL]          = {COMPOUND_STRING("The Box is full."),           MSG_VAR_NONE},
     [MSG_RELEASE_POKE]         = {COMPOUND_STRING("Release this Pokémon?"),      MSG_VAR_NONE},
-    [MSG_RELEASE_NO_GENOME]    = {COMPOUND_STRING("Won't yield a Shiny Genome! "), MSG_VAR_NONE},
+    [MSG_RELEASE_NO_GENOME]    = {COMPOUND_STRING("Won't yield a Shiny Genome!"), MSG_VAR_NONE},
+    [MSG_RELEASE_WILL_GIVE_GENOME] = {COMPOUND_STRING("Will yield a Shiny Genome!"), MSG_VAR_NONE},
     [MSG_RELEASE_WHICH]        = {COMPOUND_STRING("Release which group?"),       MSG_VAR_NONE},
     [MSG_RELEASE_BOX_ALL]      = {COMPOUND_STRING("Release whole Box?"),         MSG_VAR_NONE},
     [MSG_RELEASE_BOX_EGGS]     = {COMPOUND_STRING("Release all Eggs?"),          MSG_VAR_NONE},
@@ -3179,14 +3181,23 @@ static void Task_ReleaseMon(u8 taskId)
             sStorage->state = 20;
             break;
         }
-        if (((sCursorArea == CURSOR_AREA_IN_PARTY)
-                ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
-                : GetBoxMonDataAt(StorageGetCurrentBox(), sCursorPosition, MON_DATA_IS_SHINY))
-            && !CheckBagHasSpace(ITEM_SHIN_GENOME, 1))
         {
-            PrintMessage(MSG_BAG_FULL);
-            sStorage->state = 14;
-            break;
+            bool32 isShiny = (sCursorArea == CURSOR_AREA_IN_PARTY)
+                ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
+                : GetBoxMonDataAt(StorageGetCurrentBox(), sCursorPosition, MON_DATA_IS_SHINY);
+
+            if (isShiny && !CheckBagHasSpace(ITEM_SHIN_GENOME, 1))
+            {
+                PrintMessage(MSG_BAG_FULL);
+                sStorage->state = 14;
+                break;
+            }
+            if (isShiny)
+            {
+                PrintMessage(MSG_RELEASE_WILL_GIVE_GENOME);
+                sStorage->state = 21;
+                break;
+            }
         }
         PrintMessage(MSG_RELEASE_POKE);
         ShowYesNoWindow(1);
@@ -3319,6 +3330,15 @@ static void Task_ReleaseMon(u8 taskId)
         }
         break;
     case 20:
+        if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
+        {
+            ClearBottomWindow();
+            PrintMessage(MSG_RELEASE_POKE);
+            ShowYesNoWindow(1);
+            sStorage->state = 1;
+        }
+        break;
+    case 21:
         if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
         {
             ClearBottomWindow();
