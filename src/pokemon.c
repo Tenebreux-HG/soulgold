@@ -2364,7 +2364,7 @@ u32 GetBoxMonData3(struct BoxPokemon *boxMon, s32 field, u8 *data)
         case MON_DATA_INNATE3:
         {
             u32 species = boxMon->secure.species;
-            retVal = GetSpeciesInnate(species, field - MON_DATA_INNATE1 + 1);
+            retVal = GetPokemonInnate(species, boxMon->personality, field - MON_DATA_INNATE1 + 1);
             break;
         }
         case MON_DATA_COOL_RIBBON:
@@ -3416,7 +3416,7 @@ void PokemonToBattleMon(struct Pokemon *src, struct BattlePokemon *dst)
 
     for (i = 0; i < MAX_MON_INNATES; i++)
     {
-        dst->innates[i] = GetSpeciesInnate(dst->species, i + 1);
+        dst->innates[i] = GetPokemonInnate(dst->species, dst->personality, i + 1);
     }
 
     memset(&dst->volatiles, 0, sizeof(struct Volatiles));
@@ -7742,7 +7742,7 @@ bool32 IsInnateUnlockedByLevel(u32 innateNum, u32 level)
 }
 
 //Returns the slot the Innate is found in, assuming the Ability is already slot 1. Returns 0 if not found.
-u32 SpeciesHasInnate(u32 species, enum Ability ability)
+u32 SpeciesHasInnate(u32 species, u32 personality, enum Ability ability)
 {
     u32 innateNum = 0;
 
@@ -7751,19 +7751,16 @@ u32 SpeciesHasInnate(u32 species, enum Ability ability)
 
     for (u32 i = 0; i < MAX_MON_INNATES; i++)
     {
-        if (gSpeciesInfo[species].innates[i] == ability)
-            {
-                innateNum = i + 2;
-                //DebugPrintf("INNATE FOUND: %d", innateNum - 1);
-            }
+        if (GetPokemonInnate(species, personality, i + 1) == ability)
+            innateNum = i + 2;
     }
 
-        return innateNum;
+    return innateNum;
 }
 
-u32 SpeciesHasInnateAtLevel(u32 species, enum Ability ability, u32 level)
+u32 SpeciesHasInnateAtLevel(u32 species, u32 personality, enum Ability ability, u32 level)
 {
-    u32 innateNum = SpeciesHasInnate(species, ability);
+    u32 innateNum = SpeciesHasInnate(species, personality, ability);
 
     if (innateNum == 0)
         return 0;
@@ -7774,18 +7771,37 @@ u32 SpeciesHasInnateAtLevel(u32 species, enum Ability ability, u32 level)
 bool32 BoxMonHasInnate(struct BoxPokemon *boxmon,  enum Ability ability)
 {
     u32 species = GetBoxMonData(boxmon, MON_DATA_SPECIES, NULL);
+    u32 personality = GetBoxMonData(boxmon, MON_DATA_PERSONALITY, NULL);
     u32 level = GetLevelFromBoxMonExp(boxmon);
 
-    return SpeciesHasInnateAtLevel(species, ability, level);
+    return SpeciesHasInnateAtLevel(species, personality, ability, level);
 }
 
 bool32 MonHasTrait(struct Pokemon *mon,  enum Ability ability)
 {
     u32 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
+    u32 personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
     u32 level = GetMonData(mon, MON_DATA_LEVEL, NULL);
 
-    return (GetMonAbility(mon) == ability || SpeciesHasInnateAtLevel(species, ability, level));
-} 
+    return (GetMonAbility(mon) == ability || SpeciesHasInnateAtLevel(species, personality, ability, level));
+}
+
+static bool32 IsSpeciesFixedInnate(u32 species)
+{
+    return gSpeciesInfo[species].isRestrictedLegendary
+        || gSpeciesInfo[species].isSubLegendary
+        || gSpeciesInfo[species].isMythical
+        || gSpeciesInfo[species].isUltraBeast;
+}
+
+enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
+{
+    if (IsSpeciesFixedInnate(species))
+        return GetSpeciesInnate(species, traitNum);
+
+    u32 seed = personality ^ (traitNum * 0x27220A5F);
+    return 1 + (seed % (ABILITIES_COUNT - 1));
+}
 
 enum Ability GetSpeciesInnate(u32 species, u32 traitNum)
 {

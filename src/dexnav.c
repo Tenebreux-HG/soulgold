@@ -2761,12 +2761,7 @@ static void DexNavDrawHiddenIcons(void)
 /////////////////////////
 u32 CalculateDexNavShinyRolls(void)
 {
-    u32 chainBonus, rndBonus;
-    u8 chain = gSaveBlock3Ptr->dexNavChain;
-
-    chainBonus = (chain >= 100) ? 10 : (chain >= 50) ? 5 : 0;
-    rndBonus = (Random() % 100 < 4) ? 4 : 0;
-    return chainBonus + rndBonus;
+    return 0;
 }
 
 void TryIncrementSpeciesSearchLevel()

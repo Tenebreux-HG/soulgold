@@ -718,7 +718,7 @@ static bool32 ForceBossFormChange(enum BattlerId battler, u16 targetSpecies)
 #endif
     {
         for (u32 innate = 0; innate < MAX_MON_INNATES; innate++)
-            gBattleMons[battler].innates[innate] = GetSpeciesInnate(targetSpecies, innate + 1);
+            gBattleMons[battler].innates[innate] = GetPokemonInnate(targetSpecies, gBattleMons[battler].personality, innate + 1);
     }
     SetActiveGimmick(battler, GIMMICK_MEGA);
     SetGimmickAsActivated(battler, GIMMICK_MEGA);

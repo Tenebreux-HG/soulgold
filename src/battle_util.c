@@ -11441,7 +11441,7 @@ static void RefreshBattlerInnatesAfterFormChange(enum BattlerId battler, u32 spe
 #endif
 
     for (u32 innate = 0; innate < MAX_MON_INNATES; innate++)
-        gBattleMons[battler].innates[innate] = GetSpeciesInnate(species, innate + 1);
+        gBattleMons[battler].innates[innate] = GetPokemonInnate(species, gBattleMons[battler].personality, innate + 1);
 }
 
 bool32 DoBattlersShareType(enum BattlerId battler1, enum BattlerId battler2)
@@ -13824,7 +13824,7 @@ enum Ability GetBattlerTrait(enum BattlerId battlerId, u32 traitNum, bool32 igno
     {
         // Load natural Innate if not a Test
         if (ability == ABILITIES_COUNT)
-            ability = GetSpeciesInnate(gBattleMons[battlerId].species, traitNum);
+            ability = GetPokemonInnate(gBattleMons[battlerId].species, gBattleMons[battlerId].personality, traitNum);
 
         if (!forcedTestInnate && !IsInnateUnlockedByLevel(traitNum, gBattleMons[battlerId].level))
             return ABILITY_NONE;
