@@ -7848,6 +7848,7 @@ enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
 {
     enum Ability results[MAX_MON_INNATES_INTERNAL];
     enum Ability mainAbility;
+    enum Ability speciesAbility0, speciesAbility1, speciesHiddenAbility;
     u32 abilityNum;
     u32 i, j, seed;
     bool32 weatherAlreadyUsed;
@@ -7861,6 +7862,13 @@ enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
     mainAbility = GetAbilityBySpecies(species, abilityNum);
     weatherAlreadyUsed = IsWeatherAbility(mainAbility);
 
+    // All 3 of this species' possible abilities (both normal slots + hidden), so an
+    // Innate can never match one of them -- even one that isn't currently active
+    // (in case the main ability gets swapped later via Ability Capsule/Patch).
+    speciesAbility0 = GetSpeciesAbility(species, 0);
+    speciesAbility1 = GetSpeciesAbility(species, 1);
+    speciesHiddenAbility = GetSpeciesAbility(species, 2);
+
     for (i = 1; i <= traitNum; i++)
     {
         seed = personality ^ (i * 0x27220A5F);
@@ -7868,14 +7876,18 @@ enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
         {
             enum Ability candidate = 1 + (seed % (ABILITIES_COUNT - 1));
             duplicate = FALSE;
-            for (j = 0; j < i - 1; j++)
+
+            if (candidate == speciesAbility0
+                || candidate == speciesAbility1
+                || candidate == speciesHiddenAbility)
+                duplicate = TRUE;
+
+            for (j = 0; j < i - 1 && !duplicate; j++)
             {
                 if (results[j] == candidate)
-                {
                     duplicate = TRUE;
-                    break;
-                }
             }
+
             if (!duplicate && IsWeatherAbility(candidate) && weatherAlreadyUsed)
                 duplicate = TRUE; // a 2nd weather ability counts as a duplicate: reroll
 
