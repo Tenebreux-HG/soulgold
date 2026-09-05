@@ -7824,13 +7824,75 @@ static bool32 IsSpeciesFixedInnate(u32 species)
         || gSpeciesInfo[species].isUltraBeast;
 }
 
+static bool32 IsWeatherAbility(enum Ability ability)
+{
+    switch (ability)
+    {
+    case ABILITY_DRIZZLE:
+    case ABILITY_DROUGHT:
+    case ABILITY_ORICHALCUM_PULSE:
+    case ABILITY_SAND_STREAM:
+    case ABILITY_SNOW_WARNING:
+    case ABILITY_DESOLATE_LAND:
+    case ABILITY_PRIMORDIAL_SEA:
+    case ABILITY_DELTA_STREAM:
+    case ABILITY_SAND_SPIT:
+    case ABILITY_TIDAL_DEITY:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
 {
+    enum Ability results[MAX_MON_INNATES_INTERNAL];
+    enum Ability mainAbility;
+    u32 abilityNum;
+    u32 i, j, seed;
+    bool32 weatherAlreadyUsed;
+    bool32 duplicate;
+
     if (IsSpeciesFixedInnate(species))
         return GetSpeciesInnate(species, traitNum);
 
-    u32 seed = personality ^ (traitNum * 0x27220A5F);
-    return 1 + (seed % (ABILITIES_COUNT - 1));
+    // Recreate the mon's main ability from its personality (same formula used at creation)
+    abilityNum = GetSpeciesAbility(species, 1) ? (personality & 1) : 0;
+    mainAbility = GetAbilityBySpecies(species, abilityNum);
+    weatherAlreadyUsed = IsWeatherAbility(mainAbility);
+
+    for (i = 1; i <= traitNum; i++)
+    {
+        seed = personality ^ (i * 0x27220A5F);
+        do
+        {
+            enum Ability candidate = 1 + (seed % (ABILITIES_COUNT - 1));
+            duplicate = FALSE;
+            for (j = 0; j < i - 1; j++)
+            {
+                if (results[j] == candidate)
+                {
+                    duplicate = TRUE;
+                    break;
+                }
+            }
+            if (!duplicate && IsWeatherAbility(candidate) && weatherAlreadyUsed)
+                duplicate = TRUE; // a 2nd weather ability counts as a duplicate: reroll
+
+            if (!duplicate)
+            {
+                results[i - 1] = candidate;
+                if (IsWeatherAbility(candidate))
+                    weatherAlreadyUsed = TRUE;
+            }
+            else
+            {
+                seed = seed * 1103515245 + 12345;
+            }
+        } while (duplicate);
+    }
+
+    return results[traitNum - 1];
 }
 
 enum Ability GetSpeciesInnate(u32 species, u32 traitNum)

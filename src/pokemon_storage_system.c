@@ -7384,6 +7384,8 @@ static bool8 TryHideReleaseMon(void)
     {
         return TRUE;
     }
+}
+
 static bool32 IsFreeStarterSpecies(u32 species)
 {
     switch (species)
