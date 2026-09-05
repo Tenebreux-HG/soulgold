@@ -7742,7 +7742,44 @@ bool32 IsInnateUnlockedByLevel(u32 innateNum, u32 level)
 }
 
 //Returns the slot the Innate is found in, assuming the Ability is already slot 1. Returns 0 if not found.
-u32 SpeciesHasInnate(u32 species, u32 personality, enum Ability ability)
+//Ne marche que pour les especes a innate FIXE (legendaires etc.), vu qu'il n'y a pas
+//de Pokemon precis ici. Pour toutes les autres especes (innates random), retourne
+//toujours 0 - utilise MonHasInnateAtLevel plus bas pour un Pokemon precis.
+u32 SpeciesHasInnate(u32 species, enum Ability ability)
+{
+    u32 innateNum = 0;
+
+    if (AreReplayInnatesDisabled())
+        return 0;
+
+    if (!(gSpeciesInfo[species].isRestrictedLegendary
+       || gSpeciesInfo[species].isSubLegendary
+       || gSpeciesInfo[species].isMythical
+       || gSpeciesInfo[species].isUltraBeast))
+        return 0;
+
+    for (u32 i = 0; i < MAX_MON_INNATES; i++)
+    {
+        if (gSpeciesInfo[species].innates[i] == ability)
+            innateNum = i + 2;
+    }
+
+    return innateNum;
+}
+
+u32 SpeciesHasInnateAtLevel(u32 species, enum Ability ability, u32 level)
+{
+    u32 innateNum = SpeciesHasInnate(species, ability);
+
+    if (innateNum == 0)
+        return 0;
+
+    return IsInnateUnlockedByLevel(innateNum - 1, level) ? innateNum : 0;
+}
+
+//Pareil, mais pour un Pokemon precis: utilise sa personality pour retrouver
+//ses vrais innates (aleatoires si son espece n'est pas fixe).
+u32 MonHasInnateAtLevel(u32 species, u32 personality, enum Ability ability, u32 level)
 {
     u32 innateNum = 0;
 
@@ -7755,35 +7792,28 @@ u32 SpeciesHasInnate(u32 species, u32 personality, enum Ability ability)
             innateNum = i + 2;
     }
 
-    return innateNum;
-}
-
-u32 SpeciesHasInnateAtLevel(u32 species, u32 personality, enum Ability ability, u32 level)
-{
-    u32 innateNum = SpeciesHasInnate(species, personality, ability);
-
     if (innateNum == 0)
         return 0;
 
     return IsInnateUnlockedByLevel(innateNum - 1, level) ? innateNum : 0;
 }
 
-bool32 BoxMonHasInnate(struct BoxPokemon *boxmon,  enum Ability ability)
+bool32 BoxMonHasInnate(struct BoxPokemon *boxmon, enum Ability ability)
 {
     u32 species = GetBoxMonData(boxmon, MON_DATA_SPECIES, NULL);
     u32 personality = GetBoxMonData(boxmon, MON_DATA_PERSONALITY, NULL);
     u32 level = GetLevelFromBoxMonExp(boxmon);
 
-    return SpeciesHasInnateAtLevel(species, personality, ability, level);
+    return MonHasInnateAtLevel(species, personality, ability, level);
 }
 
-bool32 MonHasTrait(struct Pokemon *mon,  enum Ability ability)
+bool32 MonHasTrait(struct Pokemon *mon, enum Ability ability)
 {
     u32 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
     u32 personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
     u32 level = GetMonData(mon, MON_DATA_LEVEL, NULL);
 
-    return (GetMonAbility(mon) == ability || SpeciesHasInnateAtLevel(species, personality, ability, level));
+    return (GetMonAbility(mon) == ability || MonHasInnateAtLevel(species, personality, ability, level));
 }
 
 static bool32 IsSpeciesFixedInnate(u32 species)
