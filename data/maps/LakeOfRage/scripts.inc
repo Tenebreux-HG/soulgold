@@ -195,7 +195,7 @@ LakeOfRage_EventScript_Gyarados::
 # 98 "data/maps/LakeOfRage/scripts.pory"
 	setflag FLAG_SET_SHINY
 # 99 "data/maps/LakeOfRage/scripts.pory"
-	setwildbattle SPECIES_GYARADOS, 35
+	setwildbattle SPECIES_GYARADOS, 45
 # 100 "data/maps/LakeOfRage/scripts.pory"
 	dowildbattle
 # 101 "data/maps/LakeOfRage/scripts.pory"

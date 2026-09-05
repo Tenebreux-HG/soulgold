@@ -89,6 +89,7 @@ enum {
     MSG_WAS_DEPOSITED,
     MSG_BOX_IS_FULL,
     MSG_RELEASE_POKE,
+    MSG_RELEASE_NO_GENOME,
     MSG_RELEASE_WHICH,
     MSG_RELEASE_BOX_ALL,
     MSG_RELEASE_BOX_EGGS,
@@ -744,6 +745,9 @@ static void InitReleaseMon(void);
 static bool8 TryHideReleaseMon(void);
 static void InitCanReleaseMonVars(void);
 static void ReleaseMon(void);
+static bool32 IsFreeStarterSpecies(u32 species);
+static bool32 IsFreeShinySource(u32 species, u32 metLevel, u32 metLocation);
+static bool32 IsSelectedMonExcludedShiny(void);
 static bool8 ShouldReleaseBoxMon(u8, u8, u8);
 static u8 CountBoxMonsToRelease(u8, u8);
 static bool8 BoxMonsToReleaseHaveMail(u8, u8);
@@ -1158,6 +1162,7 @@ static const struct StorageMessage sMessages[] =
     [MSG_WAS_DEPOSITED]        = {COMPOUND_STRING("{DYNAMIC 0} was deposited."), MSG_VAR_MON_NAME_1},
     [MSG_BOX_IS_FULL]          = {COMPOUND_STRING("The Box is full."),           MSG_VAR_NONE},
     [MSG_RELEASE_POKE]         = {COMPOUND_STRING("Release this Pokémon?"),      MSG_VAR_NONE},
+    [MSG_RELEASE_NO_GENOME]    = {COMPOUND_STRING("This Pokémon won't yield a Shiny Genome if released."), MSG_VAR_NONE},
     [MSG_RELEASE_WHICH]        = {COMPOUND_STRING("Release which group?"),       MSG_VAR_NONE},
     [MSG_RELEASE_BOX_ALL]      = {COMPOUND_STRING("Release whole Box?"),         MSG_VAR_NONE},
     [MSG_RELEASE_BOX_EGGS]     = {COMPOUND_STRING("Release all Eggs?"),          MSG_VAR_NONE},
@@ -3168,6 +3173,12 @@ static void Task_ReleaseMon(u8 taskId)
     switch (sStorage->state)
     {
     case 0:
+        if (IsSelectedMonExcludedShiny())
+        {
+            PrintMessage(MSG_RELEASE_NO_GENOME);
+            sStorage->state = 20;
+            break;
+        }
         if (((sCursorArea == CURSOR_AREA_IN_PARTY)
                 ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
                 : GetBoxMonDataAt(StorageGetCurrentBox(), sCursorPosition, MON_DATA_IS_SHINY))
@@ -3305,6 +3316,15 @@ static void Task_ReleaseMon(u8 taskId)
         {
             ClearBottomWindow();
             SetPokeStorageTask(Task_PokeStorageMain);
+        }
+        break;
+    case 20:
+        if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
+        {
+            ClearBottomWindow();
+            PrintMessage(MSG_RELEASE_POKE);
+            ShowYesNoWindow(1);
+            sStorage->state = 1;
         }
         break;
     }
@@ -7364,6 +7384,59 @@ static bool8 TryHideReleaseMon(void)
     {
         return TRUE;
     }
+static bool32 IsFreeStarterSpecies(u32 species)
+{
+    switch (species)
+    {
+    case SPECIES_CHESPIN:
+    case SPECIES_FENNEKIN:
+    case SPECIES_FROAKIE:
+    case SPECIES_CHIKORITA:
+    case SPECIES_CYNDAQUIL:
+    case SPECIES_TOTODILE:
+    case SPECIES_SPRIGATITO:
+    case SPECIES_TORCHIC:
+    case SPECIES_POPPLIO:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+static bool32 IsFreeShinySource(u32 species, u32 metLevel, u32 metLocation)
+{
+    return (IsFreeStarterSpecies(species) && metLevel == 5  && metLocation == MAPSEC_NEW_BARK_TOWN)
+        || (species == SPECIES_GYARADOS   && metLevel == 45 && metLocation == MAPSEC_LAKE_OF_RAGE)
+        || (species == SPECIES_DRATINI    && metLevel == 15 && metLocation == MAPSEC_DRAGONS_DEN);
+}
+
+static bool32 IsSelectedMonExcludedShiny(void)
+{
+    bool32 isShiny;
+    u32 species;
+    u32 metLevel;
+    u32 metLocation;
+
+    if (sCursorArea == CURSOR_AREA_IN_PARTY)
+    {
+        isShiny     = GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY);
+        species     = GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_SPECIES);
+        metLevel    = GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_MET_LEVEL);
+        metLocation = GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_MET_LOCATION);
+    }
+    else
+    {
+        u8 boxId = StorageGetCurrentBox();
+        isShiny     = GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_IS_SHINY);
+        species     = GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_SPECIES);
+        metLevel    = GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_MET_LEVEL);
+        metLocation = GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_MET_LOCATION);
+    }
+
+    if (!isShiny)
+        return FALSE;
+
+    return IsFreeShinySource(species, metLevel, metLocation);
 }
 
 static void ReleaseMon(void)
@@ -7414,7 +7487,7 @@ static void ReleaseMon(void)
                 ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
                 : GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_IS_SHINY);
 
-            if (isShiny && AddBagItem(ITEM_SHIN_GENOME, 1))
+            if (isShiny && !IsSelectedMonExcludedShiny() && AddBagItem(ITEM_SHIN_GENOME, 1))
                 FlagSet(FLAG_SHINY_GENOME_PENDING);
         }
 
