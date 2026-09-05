@@ -687,7 +687,6 @@ script BattleCafe_RewardMenu {
     dynmultipush("Vitamin Set Atk - 4", 10)
     dynmultipush("Vitamin Set Def - 4", 11)
     dynmultipush("Vitamin Set Spe - 2", 12)
-    dynmultipush("Shiny Genome - 4", 7)
     dynmultipush("2 Gold Caps - 5", 8)
     dynmultipush("¥250,000 - 5", 9)
     dynmultipush("G. Articuno - 5", 0)
@@ -719,7 +718,6 @@ script BattleCafe_RewardMenu {
         case 4: goto(BattleCafe_ChooseThundurus)
         case 5: goto(BattleCafe_ChooseLandorus)
         case 6: goto(BattleCafe_ChooseEnamorus)
-        case 7: goto(BattleCafe_ChooseShinyGenome)
         case 8: goto(BattleCafe_ChooseGoldBottleCaps)
         case 9: goto(BattleCafe_ChooseMoney)
         case 10: goto(BattleCafe_ChooseVitaminSetAtk)
@@ -954,30 +952,6 @@ script BattleCafe_ConfirmParadoxLegend {
     special(Achievement_CheckAll)
     msgbox("A rare specimen from Paldea. Take good
             care of it!")
-    goto(BattleCafe_RewardMenu)
-}
-
-script BattleCafe_ChooseShinyGenome {
-    if (var(VAR_BATTLE_CAFE_POINTS) < 4) {
-        goto(BattleCafe_NotEnoughFourPoints)
-    }
-    msgbox("Exchange 4 Café Points for a
-            Shiny Genome?", MSGBOX_YESNO)
-    if (var(VAR_RESULT) != YES) {
-        goto(BattleCafe_RewardMenu)
-    }
-    checkitemspace(ITEM_SHIN_GENOME, 1)
-    if (var(VAR_RESULT) == FALSE) {
-        goto(BattleCafe_NotEnoughBagSpace)
-    }
-    giveitem(ITEM_SHIN_GENOME)
-    if (var(VAR_RESULT) != TRUE) {
-        goto(BattleCafe_RewardMenu)
-    }
-    subvar(VAR_BATTLE_CAFE_POINTS, 4)
-    msgbox("A rare find. Use it on whichever
-            Pokémon you want to bring out the
-            shine.")
     goto(BattleCafe_RewardMenu)
 }
 

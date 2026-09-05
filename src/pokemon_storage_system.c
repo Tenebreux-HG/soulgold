@@ -3168,6 +3168,15 @@ static void Task_ReleaseMon(u8 taskId)
     switch (sStorage->state)
     {
     case 0:
+        if (((sCursorArea == CURSOR_AREA_IN_PARTY)
+                ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
+                : GetBoxMonDataAt(StorageGetCurrentBox(), sCursorPosition, MON_DATA_IS_SHINY))
+            && !CheckBagHasSpace(ITEM_SHIN_GENOME, 1))
+        {
+            PrintMessage(MSG_BAG_FULL);
+            sStorage->state = 14;
+            break;
+        }
         PrintMessage(MSG_RELEASE_POKE);
         ShowYesNoWindow(1);
         sStorage->state++;
@@ -3285,6 +3294,13 @@ static void Task_ReleaseMon(u8 taskId)
         }
         break;
     case 13:
+        if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
+        {
+            ClearBottomWindow();
+            SetPokeStorageTask(Task_PokeStorageMain);
+        }
+        break;
+    case 14:
         if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
         {
             ClearBottomWindow();
@@ -7390,8 +7406,18 @@ static void ReleaseMon(void)
             }
         }
 
-        if (sCursorArea != CURSOR_AREA_IN_PARTY)
+                if (sCursorArea != CURSOR_AREA_IN_PARTY)
           DisableBoxMonDynamicPalette(sCursorPosition, 1);
+
+        {
+            bool32 isShiny = (sCursorArea == CURSOR_AREA_IN_PARTY)
+                ? GetMonData(&gPlayerParty[sCursorPosition], MON_DATA_IS_SHINY)
+                : GetBoxMonDataAt(boxId, sCursorPosition, MON_DATA_IS_SHINY);
+
+            if (isShiny && AddBagItem(ITEM_SHIN_GENOME, 1))
+                FlagSet(FLAG_SHINY_GENOME_PENDING);
+        }
+
         PurgeMonOrBoxMon(boxId, sCursorPosition);
     }
     TryRefreshDisplayMon();
@@ -7402,6 +7428,8 @@ static bool8 ShouldReleaseBoxMon(u8 boxId, u8 boxPosition, u8 mode)
     if (boxId >= TOTAL_BOXES_COUNT || boxPosition >= IN_BOX_COUNT)
         return FALSE;
     if (GetBoxMonDataAt(boxId, boxPosition, MON_DATA_SPECIES) == SPECIES_NONE)
+        return FALSE;
+    if (GetBoxMonDataAt(boxId, boxPosition, MON_DATA_IS_SHINY))
         return FALSE;
 
     return mode == RELEASE_BOX_ALL

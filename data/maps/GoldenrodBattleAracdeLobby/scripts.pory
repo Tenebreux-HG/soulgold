@@ -58,7 +58,6 @@ script GoldenrodArcadeLobby_Shop {
 
 mart GoldenrodArcade_Shop {
 	ITEM_MASTER_BALL
-	ITEM_SHIN_GENOME
 	ITEM_SCROLL_OF_WATERS
 	ITEM_SCROLL_OF_DARKNESS
 	ITEM_HP_UP_EX

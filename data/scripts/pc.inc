@@ -52,6 +52,24 @@ EventScript_AccessLanettesPC::
 
 EventScript_TurnOffPC::
 	setvar VAR_0x8004, PC_LOCATION_OTHER
+	goto_if_set FLAG_SHINY_GENOME_PENDING, EventScript_NotifyShinyGenomeObtained
+	goto EventScript_TurnOffPC_Continue
+	end
+
+EventScript_NotifyShinyGenomeObtained::
+	clearflag FLAG_SHINY_GENOME_PENDING
+	setvar VAR_0x8000, ITEM_SHIN_GENOME
+	setvar VAR_0x8001, 1
+	bufferitemnameplural STR_VAR_2, VAR_0x8000, VAR_0x8001
+	bufferstdstring STR_VAR_3, STDSTRING_ITEMS
+	playfanfare MUS_OBTAIN_ITEM
+	message gText_ObtainedTheItem
+	waitfanfare
+	msgbox gText_PutItemInPocket, MSGBOX_DEFAULT
+	goto EventScript_TurnOffPC_Continue
+	end
+
+EventScript_TurnOffPC_Continue::
 	playse SE_PC_OFF
 	special DoPCTurnOffEffect
 	releaseall
