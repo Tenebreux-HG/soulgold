@@ -3887,70 +3887,6 @@ static const u16 sOddEggSpecies[8] = {
 
 static const u8 sOddEggNickname[] = _("タマゴ");
 
-// EDIT THIS LIST: exact-match names that force 100% shiny eggs
-static const u8 sOddEggShinyNameList[][PLAYER_NAME_LENGTH + 1] = {
-    _("DYLAN"),
-    _("Zee"),
-    _("Meara"),
-    _("Anthony"),
-    _("RAINBOW"),
-    _("FERRO"),
-    _("Kris"),
-    _("Chad"),
-    _("Bacon"),
-    _("Excl"),
-    _("Liquid"),
-    _("Dyn"),
-    _("Fabian"),
-    _("peepy"),
-    _("Cameron"),
-    _("Joe"),
-    _("Andrew"),
-    _("Nova"),
-    _("Cromlnt"),
-    _("Phant"),
-    _("Papito"),
-    _("Casper"),
-    _("ELLI"),
-    _("Grey"),
-    _("Necro"),
-    _("Penka"),
-    _("Emmam"),
-    _("Casper"),
-    _("MARZ"),
-    _("leob050"),
-    _("Sayu"),
-    _("Brick"),
-    _("Kino"),
-    _("JIRAIYA"),
-    _("Rahtak"),
-    _("Eemeli"),
-    _("Doves"),
-    _("Drac"),
-    _("Nem"),
-    _("Jan"),
-    _("Dvs"),
-    _("Doves"),
-    _("Simpli"),
-    _("Ansu"),
-    _("Niko"),
-    _("Pate"),
-    _("Hilda"),
-    _("Athena"),
-    _("Bai"),
-    _("Melia")
-};
-
-static bool8 IsPlayerNameInShinyList(void)
-{
-    for (u32 i = 0; i < ARRAY_COUNT(sOddEggShinyNameList); i++)
-    {
-        if (StringCompare(gSaveBlock2Ptr->playerName, sOddEggShinyNameList[i]) == 0)
-            return TRUE;
-    }
-    return FALSE;
-}
-
 // Shiny rule (Gen 3):
 // shininess if (TID ^ SID ^ (PID_hi) ^ (PID_lo)) < 8
 static u32 MakeShinyPidForOt(u32 otId)
@@ -3984,7 +3920,7 @@ static u32 GetPlayerOtId32(void)
          | ((u32)gSaveBlock2Ptr->playerTrainerId[3] << 24);
 }
 
-static u8 GiveOddEgg_Internal(u16 species, bool8 forceShiny, bool8 allow14PercentShiny)
+static u8 GiveOddEgg_Internal(u16 species, bool8 forceShiny, bool8 allowShinyRoll)
 {
     struct Pokemon mon;
     u32 otId = GetPlayerOtId32();
@@ -3996,9 +3932,10 @@ static u8 GiveOddEgg_Internal(u16 species, bool8 forceShiny, bool8 allow14Percen
     u8 isEgg;
     u8 cycles;
 
-    if (!makeShiny && allow14PercentShiny)
+    if (!makeShiny && allowShinyRoll)
     {
-        makeShiny = ((Random() % 100) < 14);
+        u32 shinyPersonality = Random32();
+        makeShiny = (GET_SHINY_VALUE(otId, shinyPersonality) < GetCurrentShinyOdds());
     }
     pid = makeShiny ? MakeShinyPidForOt(otId) : MakeNonShinyPidForOt(otId);
 
@@ -4027,7 +3964,6 @@ bool8 ScrCmd_giveoddegg(struct ScriptContext *ctx)
 {
     u16 which = VarGet(ScriptReadHalfword(ctx));   // support immediate or VAR
     u16 species;
-    bool8 forceShiny;
 
     if (which == 0 || which >= ARRAY_COUNT(sOddEggSpecies))
     {
@@ -4042,8 +3978,7 @@ bool8 ScrCmd_giveoddegg(struct ScriptContext *ctx)
         return FALSE;
     }
 
-    forceShiny = IsPlayerNameInShinyList();
-    gSpecialVar_Result = GiveOddEgg_Internal(species, forceShiny, TRUE);
+    gSpecialVar_Result = GiveOddEgg_Internal(species, FALSE, TRUE);
     return FALSE;
 }
 // ====================== /END HnS: giveoddegg ======================
