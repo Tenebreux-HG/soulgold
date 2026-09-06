@@ -7844,6 +7844,44 @@ static bool32 IsWeatherAbility(enum Ability ability)
     }
 }
 
+// Abilities whose entire effect is a form-change tied to one specific species'
+// own form-change data (Mimikyu's Disguise, Palafin's Zero to Hero, etc.).
+// On any other species, TryBattleFormChange() finds no matching entry and the
+// ability does absolutely nothing -- so it's a wasted Innate slot. Also
+// includes Commander, which does nothing without a Dondozo ally on the team.
+static bool32 IsFormLockedAbility(enum Ability ability)
+{
+    switch (ability)
+    {
+    case ABILITY_ZERO_TO_HERO:
+    case ABILITY_BATTLE_BOND:
+    case ABILITY_POWER_CONSTRUCT:
+    case ABILITY_SCHOOLING:
+    case ABILITY_SHIELDS_DOWN:
+    case ABILITY_DISGUISE:
+    case ABILITY_STANCE_CHANGE:
+    case ABILITY_ZEN_MODE:
+    case ABILITY_ICE_FACE:
+    case ABILITY_GULP_MISSILE:
+    case ABILITY_HUNGER_SWITCH:
+    case ABILITY_FORECAST:
+    case ABILITY_FLOWER_GIFT:
+    case ABILITY_MULTITYPE:
+    case ABILITY_RKS_SYSTEM:
+    case ABILITY_EMBODY_ASPECT_TEAL_MASK:
+    case ABILITY_EMBODY_ASPECT_HEARTHFLAME_MASK:
+    case ABILITY_EMBODY_ASPECT_WELLSPRING_MASK:
+    case ABILITY_EMBODY_ASPECT_CORNERSTONE_MASK:
+    case ABILITY_TERA_SHIFT:
+    case ABILITY_TERA_SHELL:
+    case ABILITY_TERAFORM_ZERO:
+    case ABILITY_COMMANDER:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
 {
     enum Ability results[MAX_MON_INNATES_INTERNAL];
@@ -7881,6 +7919,9 @@ enum Ability GetPokemonInnate(u32 species, u32 personality, u32 traitNum)
                 || candidate == speciesAbility1
                 || candidate == speciesHiddenAbility)
                 duplicate = TRUE;
+
+            if (!duplicate && IsFormLockedAbility(candidate))
+                duplicate = TRUE; // form-change abilities that need data only their original species has
 
             for (j = 0; j < i - 1 && !duplicate; j++)
             {
