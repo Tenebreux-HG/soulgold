@@ -2297,7 +2297,7 @@
               {
                 "min_level": 10,
                 "max_level": 14,
-                "species": "SPECIES_JOLTIK"
+                "species": "SPECIES_PARAS"
               },
               {
                 "min_level": 10,
@@ -3086,7 +3086,7 @@
               {
                 "min_level": 18,
                 "max_level": 22,
-                "species": "SPECIES_MAGMAR"
+                "species": "SPECIES_SALANDIT"
               },
               {
                 "min_level": 19,
